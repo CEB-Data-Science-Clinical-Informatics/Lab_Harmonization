@@ -1,0 +1,4 @@
+# run outputs — regenerate, don't commit
+output/
+run_*/
+__pycache__/

@@ -1,0 +1,54 @@
+# settings.toml — where lab_harmonize.py reads from and writes to
+#
+# Paths may use forward slashes on every platform (Windows included) and may start with "~".
+# Relative paths are resolved against the folder that contains lab_harmonize.py.
+
+# ============================================================================================
+# EDIT THESE ON YOUR DEVICE — the two paths below are the author's; yours differ.
+# ============================================================================================
+[paths]
+# Folder that holds the lab parquet files.
+lab_dir = "~/gdrive/datalake/Data/20251231_fu_vte_nc/lab"
+# Where runs are written. Every run creates output_dir/run_<timestamp>/ with lab_harmonize.log,
+# the run-level CSVs and the sub-folders harmonized/, decisions/, review/.
+# Empty = the folder of lab_harmonize.py. A missing folder is created.
+output_dir = "output"
+
+# ============================================================================================
+# FIRST RUN: keep the two lines below as they are — one small file, no harmonized parquet.
+# Read lab_harmonize.log and review/. Then set files = [] and write_harmonized_files = true.
+# A full run over all files takes a few minutes and writes about as much data as it reads.
+# ============================================================================================
+[input]
+# Explicit file names to process (inside lab_dir). Empty = every file matching file_glob,
+# in sorted order.
+files = ["lab_20260101_20260131.parquet.gzip"]
+file_glob = "*.parquet*"
+
+[output]
+# Write harmonized/<input file name> per input file: every source row, same name and compression,
+# + the nine split columns + the five _std columns. The file can replace the source downstream.
+write_harmonized_files = true
+# Parquet compression of the harmonized files. Empty = the same codec the source file uses
+# (read from the file itself). Or force one: "gzip", "zstd", "snappy", "lz4", "brotli", "uncompressed".
+compression = ""
+# Columns from the source file to keep in the harmonized output. Empty = keep every column.
+keep_columns = []
+# Number of most frequent still-to-review values written per file to review/<stem>_review_top.csv.
+review_top_n = 300
+
+# ============================================================================================
+# Column names in the source files. Change only if your files are named differently.
+# ============================================================================================
+[columns]
+code = "CODE_TEST"
+result = "RESULT_VAL"
+unit = "UNIT"
+# Test name, carried into the decisions files and the unit reports so a person can tell what a
+# code is. Not used by any rule. Leave empty if the source has no such column.
+name = "SHORT_TEST"
+# Rows whose code starts with any of these prefixes are not split or converted (microbiology is
+# out of scope for this stage). They are counted in the log and kept in the harmonized file, in
+# place, with `shape` set to the label below and every other new column null.
+exclude_code_prefixes = ["MB"]
+excluded_shape_label = "microbiology"

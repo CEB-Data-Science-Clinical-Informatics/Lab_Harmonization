@@ -1,0 +1,95 @@
+code,unit_source,unit_target,method,factor,molar_mass,test_name,note,added_by,added_on
+100043,ug/mL,g/L,1,0.001,,C3c,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+100051,ug/mL,g/L,1,0.001,,C4,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+100065,mg/mL,g/L,1,1.0,,Transferrin,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+100065,ng/mL,g/L,1,1e-6,,Transferrin,corrected prefix 1e6 -> 1e-6,seed from reference/unit_factors/unit_factors.csv,2026-09-04
+100534,mg/mL,g/L,1,1.0,,"IgG subclass||||IgG subclass 2 , IgG2","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+100560,ng/mL,nmol/L,5,1000.0,288.4,"Maternal serum , Second trimester , Triple markers (AFP,Free","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+150660,mg/dL,g/dL,1,0.001,,Albumin/Creatinine Ratio in Urine||||Urine Creatinine,corrected: was method 4 (x113); mg/dL->g/dL is prefix only,seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200008,g/L,g/dL,1,0.1,,Albumin,sheet: divided by 10,"laboratory.xlsx (subprojects_HT/AF_HT/map_list), factors re-expressed in our method scheme",2026-09-04
+200011,pg/mL,ng/dL,1,0.1,,Aldosterone (EDTA),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200016,umol/L,ug/dL,4,0.1,17.03,Ammonia,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200021,g/L,mg/dL,1,100.0,,Apolipoprotein A-l (Nephelometric method),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200022,g/L,mg/dL,1,100.0,,Apolipoprotein B (Nephelometric method),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200030,mmol/L,mg/dL,4,0.1,28.0,Blood urea nitrogen,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200031,mmol/L,mg/dL,4,0.1,28.0,Urea Nitrogen (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200033,mmol/L,mg/dL,4,0.1,40.08,Calcium,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200035,mmol/L,mg/dL,4,0.1,40.08,Calcium (Random Urine),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200040,mg/dL,mmol/L,5,10.0,35.45,Chloride (Heparinized Blood),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200047,mmol/L,mg/dL,4,0.1,386.65,Cholesterol,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200048,mmol/L,mg/dL,4,0.1,386.65,Cholesterol(CHOL) (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200052,ug/mL,ng/mL,1,1000.0,,C-peptide(Random Urine),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200058,umol/L,mg/dL,4,0.0001,113.12,Creatinine,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200059,umol/L,mg/dL,4,0.0001,113.12,Creatinine (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200065,umol/L,mg/dL,4,0.0001,584.7,Direct bilirubin,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200066,umol/L,mg/dL,4,0.0001,584.7,Direct bilirubin (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200076,mmol/L,mg/dL,4,0.1,180.0,Glucose,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200077,mmol/L,mg/dL,4,0.1,180.0,Glucose (NaF),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200078,mmol/L,mg/dL,4,0.1,180.0,Glucose (Heparinized blood),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200079,mmol/L,mg/dL,4,0.1,180.0,Glucose (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200081,mmol/L,mg/dL,4,0.1,180.0,Glucose (CSF),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200082,mmol/L,mg/dL,4,0.1,180.0,Glucose (Random Urine),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200085,mmol/L,mg/dL,4,0.1,386.67,HDL Cholesterol,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200090,mmol/L,mg/dL,4,0.1,30.97,Inorganic phosphate,corrected molar mass 94.97 -> 30.97 (phosphate reported as phosphorus),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200091,mmol/L,mg/dL,4,0.1,30.97,Inorganic phosphate (Other),corrected molar mass 94.97 -> 30.97 (phosphate reported as phosphorus),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200092,mmol/L,mg/dL,4,0.1,30.97,Inorganic Phosphate (Random Urine),corrected molar mass 94.97 -> 30.97 (phosphate reported as phosphorus),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200098,mg/dL,mmol/L,5,10.0,90.078,Lactate (Heparinized Blood),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200099,mg/dL,mmol/L,5,10.0,90.078,Lactate,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200106,mmol/L,mg/dL,4,0.1,386.65,LDL Cholesterol,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200111,g/L,mg/dL,1,100.0,,Lipoprotein (a) (Nephelometric method),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200116,mmol/L,mg/dL,4,0.1,24.305,Magnesium,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200117,mmol/L,mg/dL,4,0.1,24.305,Magnesium (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200118,mmol/L,mg/dL,4,0.1,24.305,Magnesium (Random Urine),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200127,pmol/L,pg/mL,9,8.457,,NT-proBNP,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200134,umol/L,ug/dL,4,0.1,55.845,Serum iron,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200146,umol/L,ug/dL,4,0.1,55.845,TIBC,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200148,umol/L,mg/dL,4,0.0001,584.7,Liver Function Test||||Total bilirubin,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200149,umol/L,mg/dL,4,0.0001,584.7,Total bilirubin (Other),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200157,mmol/L,mg/dL,4,0.1,885.7,Lipid profile||||Triglyceride,corrected molar mass 176.12 -> 885.7 (triglyceride average),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200158,mmol/L,mg/dL,4,0.1,885.7,Triglyceride (Other),corrected molar mass 176.12 -> 885.7 (triglyceride average),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200159,ng/mL,ng/L,1,1000.0,,hs Troponin T,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200160,mmol/L,mg/dL,4,0.1,28.0,Urea Nitrogen (Random Urine),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200162,umol/L,mg/dL,4,0.0001,168.11,Uric acid,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200163,umol/L,mg/dL,4,0.0001,168.11,Uric acid (Other),sheet: divided by 59.48 (= x0.01681); same molar mass as 200162,"laboratory.xlsx (subprojects_HT/AF_HT/map_list), factors re-expressed in our method scheme",2026-09-04
+200168,mmol/L,mg/dL,4,0.1,180.0,Glucose (30 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200169,mmol/L,mg/dL,4,0.1,180.0,Glucose (60 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200170,mmol/L,mg/dL,4,0.1,180.0,Glucose (90 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200171,mmol/L,mg/dL,4,0.1,180.0,Glucose (120 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200173,mmol/L,mg/dL,4,0.1,180.0,Glucose (180 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200174,mmol/L,mg/dL,4,0.1,180.0,Glucose (240 mins),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200257,mg/dL,mg/L,1,10.0,,Vitamin C (HPLC),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200302,ug/L,mg/L,1,0.001,,"Bone Alkaline Phosphatase(BAP,BAP ostase)","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200309,umol/L,mg/dL,4,0.0001,408.6,[Total bile acid],"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200531,mmol/L,mg/dL,4,0.1,180.0,Glucose tolerance test||||FBS,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200532,mmol/L,mg/dL,4,0.1,180.0,Glucose tolerance test||||BS 1 hr,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200533,mmol/L,mg/dL,4,0.1,180.0,Glucose tolerance test||||BS 2 hrs,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200534,mmol/L,mg/dL,4,0.1,180.0,Glucose tolerance test||||BS 3 hrs,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200611,mmol/L,mg/dL,4,0.1,40.08,Calcium (24 hrs Urine)||||Urine calcium,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200613,mmol/day,mg/day,4,1.0,40.08,Calcium (24 hrs Urine)||||Urine calcium 24 hrs. (à¸„à¹ˆà¸²à¸,"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200616,mmol/L,mg/dL,4,0.1,30.97,Inorganic Phosphate (24 hrs Urine)||||Urine Phosphorus,corrected molar mass 94.97 -> 30.97 (phosphate reported as phosphorus),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200618,mmol/day,g/day,4,0.001,30.97,Inorganic Phosphate (24 hrs Urine)||||Urine Phosphorus 24 hr,corrected molar mass 94.97 -> 30.97 (phosphate reported as phosphorus),"seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200621,mmol/L,mg/dL,4,0.1,24.305,Magnesium (Urine 24 hrs.)||||Urine magnesium 24 hrs.,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200623,mmol/day,mg/day,4,1.0,24.305,Magnesium (Urine 24 hrs.)||||Urine magnesium 24 hrs. (à¸„à¹ˆ,"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200626,mmol/L,mg/dL,4,0.1,28.0,Urea(24 hrs. Urine)||||Urine Urea,"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200628,mmol/day,g/day,4,0.001,28,Urea(24 hrs. Urine)||||Urine Urea 24 hrs. (à¸„à¹ˆà¸²à¸„à¸³à¸,"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200638,mmol/day,g/day,4,0.001,113.12,Creatinine(24 hrs Urine)||||Urine Creatinine 24hrs. (à¸„à¹ˆà,"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200643,mmol/day,mg/day,4,1.0,168.11,Uric acid (24 hrs. Urine)||||Urine Uric acid 24hrs. (à¸„à¹ˆà,"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200651,mmol/L,mg/dL,4,0.1,180.0,"Glucose tolerance test (3 tube FBS,1 hr, 2 hrs)||||Glucose 1","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200652,mmol/L,mg/dL,4,0.1,180.0,"Glucose tolerance test (3 tube FBS,1 hr, 2 hrs)||||Glucose 2","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200681,mmol/L,mg/dL,4,0.1,40.08,Ionized calcium||||Ca++(pH_:ACTUAL),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200682,mmol/L,mg/dL,4,0.1,40.08,Ionized calcium||||Ca++(pH 7.40:ADJUST),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200686,mmol/L,mg/dL,4,0.1,24.305,Ionized magnesium||||MG++(pH_:ACTUAL),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200687,mmol/L,mg/dL,4,0.1,24.305,Ionized magnesium||||MG++(pH 7.40 : ADJUST),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+200712,mmol/day,g/day,4,0.001,113.12,[Creatinine (Urine 24],"","seed from reference/unit_factors/unit_factors.csv (24-hour urine rows, added after cross-year check)",2026-09-04
+200714,umol/L,mg/dL,4,0.0001,113.12,[Creatinine (Urine)],"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+201002,mmol/L,mg/dL,4,0.1,113.12,[Creatinine(Random Ur],"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+201003,umol/L,mg/dL,4,0.0001,168.11,[Uric acid(analyzer)],"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+201004,mmol/L,mg/dL,4,0.1,168.11,[Uric acid (Random Ur],"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+250081,mg/mL,mg/L,1,1000.0,,Anti FXa à¸•à¹ˆà¸­ Fondaparinux sodium (Arixtra),"",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+350012,ug/mL,mg/L,1,1.0,,"Cyanide (HPLC), EDTA-blood","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+350035,ug/mL,mg/L,1,1.0,,"Fluoride (Ion selective Electrode), Urine","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+350084,ug/L,ng/mL,1,1.0,,"Manganese (AAS), Clotted blood)","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+350269,mg/L,ug/mL,1,1.0,,"Voriconazole, Clotted blood","",seed from reference/unit_factors/unit_factors.csv,2026-09-04
+350339,mmol/L,ug/L,4,1000.0,6.941,"Lithium, EDTA Blood (ICP/MS)",corrected prefix 0.001 -> 1000 (1 mmol = 1000 umol; x molar mass ug/umol),seed from reference/unit_factors/unit_factors.csv,2026-09-04
+H119,mmol/L,mg/dL,4,0.1,180.0,Glucose (POCT - Accu-Chek),sheet: divided by 0.0555 (= x18.02); same molar mass as the other glucose codes,"laboratory.xlsx (subprojects_HT/AF_HT/map_list), factors re-expressed in our method scheme",2026-09-04
+Lac,mg/dL,mmol/L,5,10.0,90.078,"[Lac(GEM3000), Lac(GEM 3000)]","",seed from reference/unit_factors/unit_factors.csv,2026-09-04

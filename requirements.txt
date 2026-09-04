@@ -1,0 +1,4 @@
+# pip install -r requirements.txt
+polars>=1.0
+pyarrow>=14
+tomli>=2.0; python_version < "3.11"

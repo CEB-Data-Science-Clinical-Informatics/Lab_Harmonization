@@ -1,0 +1,149 @@
+# criteria.toml — the mutable rule set used by lab_harmonize.py
+# version: 2026-09-04 (see CHANGELOG.md)
+#
+# Every pattern is a regular expression evaluated by Polars (Rust regex syntax: (?i) for
+# case-insensitive, \p{L} for any letter, no look-behind). Patterns are written as TOML
+# *literal* strings ('single quotes') so backslashes need no escaping.
+#
+# Where a table maps pattern -> label, ORDER MATTERS: the first pattern that matches wins.
+# Add new words at the position where they should be tried. See HOW_IT_WORKS.md for the
+# full evaluation order and what each section does.
+
+[general]
+# Values longer than this many characters are narrative_text (free text), not split.
+narrative_length = 80
+# Marker(s) that mean "line break" inside a value -> narrative_text.
+break_pattern = '(?i)\.br\|[\r\n]'
+# Trailing full stop(s) after a value that contains no letters and ends in a digit, + or %
+# are removed before any shape detection ("3.8." -> "3.8", "> 40000." -> "> 40000").
+numeric_trailing_dot = '^([^\p{L}]*[\d+%])\s*\.+$'
+# A number that is its own token (not glued to a letter on either side). Only such a number
+# makes a value mixed_text_numeric; "JAK2" or "V617F" do not count.
+standalone_number = '(?:^|[^\p{L}\d])\d+(?:\.\d+)?(?:[^\p{L}\d]|$)'
+# Stray punctuation glued to a single word ("!few", "few.", "TRACE'", "Adequate,") is removed
+# before shape detection. Only when what remains is letters only.
+word_leading_punct = '^[!.,\x27"\\\[\]]+(\p{L}+)$'
+word_trailing_punct = '^(\p{L}+)[!.,\x27"\\\[\]]+$'
+# A trailing percent sign on a numeric value.
+percent_suffix = '%\s*$'
+# The unit string that is compatible with a trailing percent sign.
+percent_unit = '%'
+
+[missing]
+# Literal strings treated as "no value": "None", "N/A", "NA". For most tests these are export
+# artifacts. For the serum-index tests (Lipemic / Hemolysis / Icteric, codes L/H/I) "None" is a
+# genuine "no interference" result, but from 2024 the source stores a blank instead, so the
+# decision is to treat both the same way: missing. No code-specific exception is made.
+null_literal = '(?i)^\s*(?:none|n/?a)\s*$'
+# Analyzer "value not reported" sentinel: asterisk(s) followed only by zeros.
+not_reported_sentinel = '^\s*\*+0+\s*$'
+
+[numeric]
+# A plain number: optional sign, thousands separators allowed, optional decimals/exponent.
+core = '[+-]?(?:(?:\d{1,3}(?:,\d{3})+)|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?'
+# ".5" style number with no leading digit.
+leading_dot = '[+-]?\.\d+(?:[eE][+-]?\d+)?'
+# The simpler number used inside ranges, verbal operators and qualifier phrases.
+simple = '[+-]?(?:\d+(?:\.\d*)?|\.\d+)'
+# Separator between the two bounds of a range (hyphen or en dash).
+range_separator = '[-–]'
+
+[operators]
+# Comparison tokens accepted in front of a number, tried in this order.
+tokens = ['<\s*/\s*=', '>\s*/\s*=', '<=', '>=', '<', '>', '=']
+
+[operators.normalize]
+# Raw token (regex) -> canonical operator written to the `operator` column.
+# Tokens not listed here are written as captured.
+'<\s*/\s*=' = '<='
+'>\s*/\s*=' = '>='
+
+[verbal_operators]
+# Word (regex) written before a number -> operator and label.
+'over' = { operator = '>', label = 'Over' }
+'above' = { operator = '>', label = 'Above' }
+'greater\s+than' = { operator = '>', label = 'Greater Than' }
+'under' = { operator = '<', label = 'Under' }
+'below' = { operator = '<', label = 'Below' }
+'less\s+than' = { operator = '<', label = 'Less Than' }
+
+[qualifier]
+# Optional parenthesised gloss allowed after a qualifier or detection word, e.g.
+# "Negative(ตรวจไม่พบเชื้อ)". It is ignored.
+annotation = '(?:\s*\([^)]+\))?'
+
+[qualifier.values]
+# Qualitative result word (regex) -> label written to `value`. Order matters:
+# "non-reactive" must be tried before "reactive".
+# Misspellings seen in 2012-2025 are listed as explicit alternatives (see HOW_IT_WORKS.md §3.6).
+'non[-\s]?reactive' = 'Non-Reactive'
+'reactive' = 'Reactive'
+'equivocal?' = 'Equivocal'
+'positive|positve|postive' = 'Positive'
+'negative|negativ|nagative|neagtive|negartiv|megative' = 'Negative'
+
+[qualifier.modifiers]
+# Intensity / method word (regex) that may precede a qualifier or detection word
+# -> label written to `qualifier`.
+'marked(?:ly)?' = 'Marked'
+'slight(?:ly)?' = 'Slightly'
+'moderate(?:ly)?' = 'Moderate'
+'weak(?:ly)?' = 'Weakly'
+'strong(?:ly)?' = 'Strongly'
+'presumptive' = 'Presumptive'
+'culture' = 'Culture'
+'grayzone' = 'Grayzone'
+'dimly' = 'Dimly'
+'brightly' = 'Brightly'
+
+[qualifier.modifier_ranges]
+# Two modifiers joined by a hyphen ("dimly - moderately positive") -> label.
+# Tried before the single modifiers.
+'dimly\s*-\s*moderately' = 'Dimly-Moderately'
+'moderately\s*-\s*brightly' = 'Moderately-Brightly'
+'dimly\s*-\s*brightly' = 'Dimly-Brightly'
+
+[detection]
+# Detection phrases tolerate this after the word (one optional trailing full stop).
+trailing = '\.?'
+
+[detection.values]
+# Whole-value detection phrase (regex) -> label written to `value`. Order matters:
+# the negated forms must come before the bare forms. A modifier from
+# [qualifier.modifiers] may precede any of these ("Strongly detected").
+'not\s+(?:detected|seen|found)' = 'Negative'
+'undetect(?:ed)?' = 'Negative'
+'(?:not\s+|non[-\s]?|un)detectable' = 'Negative'
+'(?:detected|seen|found)' = 'Positive'
+'detectable' = 'Positive'
+'borderli(?:ne)?' = 'Equivocal'
+
+[severity]
+# Bare grading / quantity word (regex) -> label written to `qualifier` (never to `value`).
+# Inflections are accepted ("Decreased" = "Decrease"); a modifier in front ("Markedly decrease")
+# is not, and such values stay in review.
+# Each line: the word, then the misspellings of it seen in 2012-2025 (see HOW_IT_WORKS.md §3.6).
+'rare' = 'Rare'
+'trace|teace|tarce|trece|tracr|ttace|ttrace|tracce|trce|trcace|tace|trae|treca|traec|traxce|trrace|treace' = 'Trace'
+'few|feww|fewe|feew|ferw|feqw|fewq|fdew|frew|fwew|fesw|fewf|ffew|gfew|fewz|fbew|efew|faew|fewr|fews|ftew|fezw' = 'Few'
+'moderate|moderat|moderte|modurate' = 'Moderate'
+'numerous' = 'Numerous'
+'many' = 'Many'
+'adequated?|adequete' = 'Adequate'
+'decreased?|decreasd|decrased|decraese|decrase' = 'Decreased'
+'increased?' = 'Increased'
+
+[near_miss]
+# Audit only — nothing here changes a decision. After classifying, every single-word value still
+# in `review` is compared with these plain words by edit distance; the close ones are written to
+# review/<stem>_near_vocab.csv for a person to judge. Fuzzy matching is deliberately NOT applied
+# automatically: "DONE" is one edit from "none" (153K admin rows), "Male" two from "many".
+max_distance = 2
+min_length = 4
+vocabulary = [
+  'positive', 'negative', 'reactive', 'equivocal',
+  'detected', 'undetected', 'detectable', 'undetectable', 'borderline',
+  'rare', 'trace', 'few', 'moderate', 'numerous', 'many',
+  'adequate', 'decrease', 'increase',
+  'marked', 'slightly', 'weakly', 'strongly',
+]
