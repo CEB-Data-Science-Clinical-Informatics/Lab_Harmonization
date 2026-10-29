@@ -12,6 +12,37 @@ Turns raw laboratory results into columns a project can use, in two steps and on
 Source files are never modified. Rules are data files a person edits; `HOW_IT_WORKS.md` explains
 every rule and how to extend it.
 
+## Get the code
+
+You need read access to the `CEB-Data-Science-Clinical-Informatics` organization on GitHub.
+
+**First time** — copy the repository into a folder of your choice:
+
+```bash
+cd ~/projects                      # any folder; the clone creates Lab_Harmonization/ inside it
+git clone https://github.com/CEB-Data-Science-Clinical-Informatics/Lab_Harmonization.git
+cd Lab_Harmonization
+```
+
+Use `git@github.com:CEB-Data-Science-Clinical-Informatics/Lab_Harmonization.git` instead if you
+use an SSH key. Without Git: on the GitHub page, select **Code → Download ZIP** and unzip it. A ZIP
+copy cannot pull updates.
+
+**Get updates** — run these in the `Lab_Harmonization` folder:
+
+```bash
+git stash          # put your local edits (settings.toml paths, new rules) aside
+git pull           # get the new version
+git stash pop      # put your edits back on top
+```
+
+If `git stash pop` reports a conflict, open the file it names. Keep your lines and the new lines,
+then delete the `<<<<<<<`, `=======` and `>>>>>>>` markers. Run `git stash drop` after you fix it.
+Run outputs in `output/` are ignored by Git, so a pull never touches them.
+
+To share a rule you added (a word in `criteria.toml`, a row in `conversions.csv`), open a pull
+request instead of keeping it local. Then every user gets it on the next pull.
+
 ## Quick start
 
 1. Python 3.9 or newer, then `pip install -r requirements.txt` (polars, pyarrow; tomli below 3.11).
