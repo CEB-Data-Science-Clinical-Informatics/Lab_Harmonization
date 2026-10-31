@@ -472,26 +472,22 @@ def standardise(decisions: pl.DataFrame, conversions: pl.DataFrame) -> pl.DataFr
     ).drop("unit_target", "method", "factor", "molar_mass", "_reg_status")
 
 
-def unit_reports(decisions: pl.DataFrame, conversions: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Two tables: (code, unit) pairs on multi-unit codes with no registry row; conversions applied."""
+def unit_reports(decisions: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Two tables for one file: every numeric (code, unit) pair; conversions applied.
+
+    The file does not decide which codes have more than one unit: a code can change unit at a
+    year boundary, so unit_reports_across_files() decides that over all files of the run.
+    """
     numeric = decisions.filter(pl.col("shape").is_in(NUMERIC_SHAPES) & (pl.col("split_action") == "split"))
     names = pl.col(NAME).drop_nulls().unique().sort().str.join(" | ").alias("test_names")
-    per_unit = numeric.group_by(CODE, "unit").agg(pl.col(N_ROWS).sum(), names,
-                                                   pl.col("conversion_status").first())
-    # a blank unit is a missing unit, not a second unit
-    multi = (per_unit.filter(pl.col("unit").is_not_null()).group_by(CODE)
-             .agg(pl.col("unit").n_unique().alias("n_units")).filter(pl.col("n_units") > 1))
-    per_unit = per_unit.with_columns(pl.col("unit").fill_null("<blank>"))
-    # the unit a registered conversion converts *to* is the code's chosen unit, not an open question
-    targets = conversions.select(pl.col("code").alias(CODE), pl.col("unit_target").alias("unit")).unique()
-    queue = (per_unit.join(multi, on=CODE).filter(pl.col("conversion_status") == "not_registered")
-             .join(targets, on=[CODE, "unit"], how="anti")
-             .rename({CODE: "code", N_ROWS: "n_rows"}).sort(["code", "n_rows"], descending=[False, True]))
+    pairs = (numeric.group_by(CODE, "unit").agg(pl.col(N_ROWS).sum(), names,
+                                                pl.col("conversion_status").first())
+             .rename({CODE: "code", N_ROWS: "n_rows"}))
     used = (numeric.filter(pl.col("conversion_status") == "convert")
             .group_by(CODE, "unit", "unit_std").agg(pl.col(N_ROWS).sum().alias("n_rows"), names)
             .rename({CODE: "code", "unit": "unit_source", "unit_std": "unit_target"})
             .sort("n_rows", descending=True))
-    return queue, used
+    return pairs, used
 
 
 # ----------------------------------------------------------------------------------------------
@@ -555,14 +551,53 @@ def output_compression(path: Path, setting: str) -> str:
     return CODEC_NAMES.get(metadata.row_group(0).column(0).compression.upper(), "zstd")
 
 
-def scan_file(path: Path, cols: dict, p: dict) -> tuple[pl.LazyFrame, pl.LazyFrame, pl.LazyFrame]:
-    """Lazy frames of in-scope rows, of excluded rows, and of all rows (with _result/_unit/_code)."""
-    lf = pl.scan_parquet(path)
+def prefix_excluded(cols: dict) -> pl.Expr:
+    """True where the code starts with an `exclude_code_prefixes` value; a null code is in scope."""
     code = pl.col(cols["code"]).cast(pl.String)
     excluded = pl.lit(False)
     for prefix in cols["exclude_code_prefixes"]:
         excluded = excluded | code.str.starts_with(prefix)
-    excluded = excluded.fill_null(False)  # a null code is in scope, not silently dropped
+    return excluded.fill_null(False)
+
+
+def link_column(cols: dict) -> str:
+    """The `link` column when the linked-exclusion rule is on, else an empty string."""
+    return cols.get("link", "") if cols.get("exclude_linked", False) else ""
+
+
+def linked_values(files: list[Path], cols: dict) -> pl.Series:
+    """Pre-pass over all files: the `link` values (OBS_ID) of rows with an excluded code prefix.
+
+    A row with no excluded code but one of these values belongs to the same order (for example a
+    culture result with an empty CODE_TEST) and is excluded too. Two columns are read per file.
+    """
+    link = link_column(cols)
+    if not link:
+        return pl.Series("link", [], dtype=pl.String)
+    parts = []
+    for path in files:
+        lf = pl.scan_parquet(path)
+        if link not in lf.collect_schema().names():
+            raise ValueError(f"settings.toml: link column {link!r} is not in {path.name}")
+        parts.append(lf.filter(prefix_excluded(cols))
+                       .select(pl.col(link).cast(pl.String)).drop_nulls().unique()
+                       .collect(engine="streaming"))
+    return pl.concat(parts)[link].unique().sort().rename("link")
+
+
+def scan_file(path: Path, cols: dict, p: dict,
+              linked: pl.Series) -> tuple[pl.LazyFrame, pl.LazyFrame, pl.LazyFrame]:
+    """Lazy frames of in-scope rows, of excluded rows, and of all rows (with _result/_unit/_code).
+
+    `_excluded` marks every excluded row; `_excluded_link` marks the rows excluded only through
+    the `link` column (their code has no excluded prefix).
+    """
+    lf = pl.scan_parquet(path)
+    code = pl.col(cols["code"]).cast(pl.String)
+    by_prefix = prefix_excluded(cols)
+    link = link_column(cols)
+    by_link = (pl.col(link).cast(pl.String).is_in(linked.implode()).fill_null(False) & ~by_prefix
+               if link and linked.len() else pl.lit(False))
     name_col = cols.get("name", "")
     name = (pl.col(name_col).cast(pl.String).str.strip_chars() if name_col
             else pl.lit(None, dtype=pl.String))
@@ -571,7 +606,8 @@ def scan_file(path: Path, cols: dict, p: dict) -> tuple[pl.LazyFrame, pl.LazyFra
         normalize_unit(pl.col(cols["unit"])).alias(UNIT),
         code.alias(CODE),
         name.alias(NAME),
-        excluded.alias("_excluded"),
+        (by_prefix | by_link).alias("_excluded"),
+        by_link.alias("_excluded_link"),
     )
     return lf.filter(~pl.col("_excluded")), lf.filter(pl.col("_excluded")), lf
 
@@ -582,7 +618,7 @@ def distinct_values(lf: pl.LazyFrame) -> pl.DataFrame:
               .collect(engine="streaming"))
 
 
-def summarise(decisions: pl.DataFrame, n_excluded: int) -> dict:
+def summarise(decisions: pl.DataFrame, n_excluded: int, n_excluded_linked: int) -> dict:
     """Row-weighted counts for the log and the distribution comparison."""
     total_in_scope = int(decisions[N_ROWS].sum())
     by_action = (decisions.group_by("split_action").agg(pl.col(N_ROWS).sum())
@@ -597,6 +633,7 @@ def summarise(decisions: pl.DataFrame, n_excluded: int) -> dict:
     return {
         "total_rows": total_in_scope + n_excluded,
         "excluded_rows": n_excluded,
+        "excluded_linked_rows": n_excluded_linked,
         "in_scope_rows": total_in_scope,
         "actions": dict(zip(by_action["split_action"], by_action[N_ROWS])),
         "shapes": dict(zip(by_shape["shape"], by_shape[N_ROWS])),
@@ -607,25 +644,30 @@ def summarise(decisions: pl.DataFrame, n_excluded: int) -> dict:
 
 
 def process_file(path: Path, settings: dict, p: dict, folders: dict, near: dict,
-                 synonyms: dict, conversions: pl.DataFrame) -> dict:
+                 synonyms: dict, conversions: pl.DataFrame, linked: pl.Series) -> dict:
     cols, out = settings["columns"], settings["output"]
     started = time.perf_counter()
     stem = path.name.split(".")[0]
     log.info("=" * 78)
     log.info("FILE %s", path.name)
 
-    in_scope, excluded, all_rows = scan_file(path, cols, p)
-    n_excluded = excluded.select(pl.len()).collect(engine="streaming").item()
+    in_scope, excluded, all_rows = scan_file(path, cols, p, linked)
+    counts = excluded.select(pl.len().alias("all"), pl.col("_excluded_link").sum().alias("link")
+                             ).collect(engine="streaming")
+    n_excluded, n_linked = int(counts["all"].item()), int(counts["link"].item() or 0)
 
     # 1. distinct values -> decisions (all regex work happens here, once per distinct value)
     distinct = distinct_values(in_scope)
     decisions = standardise(classify(distinct, p, synonyms), conversions)
-    log.info("rows: total %s | excluded (%s) %s | in scope %s | distinct (result, unit, code, name) %s",
-             f"{int(distinct[N_ROWS].sum()) + n_excluded:,}", ",".join(cols["exclude_code_prefixes"]),
-             f"{n_excluded:,}", f"{int(distinct[N_ROWS].sum()):,}", f"{distinct.height:,}")
+    log.info("rows: total %s | excluded %s (by prefix %s: %s; by link %s: %s) | in scope %s "
+             "| distinct (result, unit, code, name) %s",
+             f"{int(distinct[N_ROWS].sum()) + n_excluded:,}", f"{n_excluded:,}",
+             ",".join(cols["exclude_code_prefixes"]), f"{n_excluded - n_linked:,}",
+             link_column(cols) or "off", f"{n_linked:,}",
+             f"{int(distinct[N_ROWS].sum()):,}", f"{distinct.height:,}")
 
     # 2. statistics
-    stats = summarise(decisions, n_excluded)
+    stats = summarise(decisions, n_excluded, n_linked)
     for action in ("split", "missing", "review"):
         n = stats["actions"].get(action, 0)
         log.info("  %-8s %14s  %6.2f%% of total", action, f"{n:,}", 100 * n / stats["total_rows"])
@@ -643,11 +685,12 @@ def process_file(path: Path, settings: dict, p: dict, folders: dict, near: dict,
                      .rename({RESULT: "result", UNIT: "unit_recorded", CODE: "code", NAME: "name",
                               N_ROWS: "n_rows"}))
     decisions_out.write_csv(folders["decisions"] / f"{stem}_decisions.csv")
-    queue, used = unit_reports(decisions, conversions)
-    log.info("  units: %s (code, unit) pairs on multi-unit codes still unregistered (%s rows); "
-             "%s conversions applied (collected into the run-level unit reports)",
-             f"{queue.height:,}", f"{int(queue['n_rows'].sum()) if queue.height else 0:,}",
-             f"{used.height:,}")
+    pairs, used = unit_reports(decisions)
+    unregistered = pairs.filter(pl.col("conversion_status") == "not_registered")
+    log.info("  units: %s numeric (code, unit) pairs in this file, %s without a registered conversion "
+             "(%s rows); %s conversions applied. The multi-unit check runs once over the whole run.",
+             f"{pairs.height:,}", f"{unregistered.height:,}",
+             f"{int(unregistered['n_rows'].sum()) if unregistered.height else 0:,}", f"{used.height:,}")
     (decisions_out.filter(pl.col("split_action") == "review")
      .head(int(out["review_top_n"]))
      .write_csv(folders["review"] / f"{stem}_review_top.csv"))
@@ -688,7 +731,7 @@ def process_file(path: Path, settings: dict, p: dict, folders: dict, near: dict,
             log.error("  ROW COUNT MISMATCH: source %s, harmonized %s", f"{stats['total_rows']:,}", f"{rows_written:,}")
 
     stats["file"] = path.name
-    stats["unit_queue"] = queue.with_columns(pl.lit(path.name).alias("file"))
+    stats["unit_pairs"] = pairs.with_columns(pl.lit(path.name).alias("file"))
     stats["code_dict"] = code_dictionary(decisions).with_columns(pl.lit(path.name).alias("file"))
     stats["conversions_used"] = used.with_columns(pl.lit(path.name).alias("file"))
     stats["seconds"] = round(time.perf_counter() - started, 1)
@@ -705,11 +748,12 @@ def comparison_table(all_stats: list[dict]) -> pl.DataFrame:
     rows = []
     for st in all_stats:
         total = st["total_rows"]
-        row = {  # frames in st (unit_queue, conversions_used) are handled by unit_reports_across_files
+        row = {  # frames in st (unit_pairs, conversions_used) are handled by unit_reports_across_files
 
             "file": st["file"],
             "total_rows": total,
             "excluded_rows": st["excluded_rows"],
+            "excluded_linked_rows": st["excluded_linked_rows"],
             "split_pct": round(100 * st["actions"].get("split", 0) / total, 2),
             "missing_pct": round(100 * st["actions"].get("missing", 0) / total, 2),
             "review_pct": round(100 * st["actions"].get("review", 0) / total, 2),
@@ -744,19 +788,33 @@ def code_dictionary_across_files(all_stats: list[dict]) -> pl.DataFrame:
             .sort("code"))
 
 
-def unit_reports_across_files(all_stats: list[dict]) -> tuple[pl.DataFrame, pl.DataFrame]:
+def unit_reports_across_files(all_stats: list[dict],
+                              conversions: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
     """One row per (code, unit) over the whole run, with the files it was seen in.
 
-    Sorted by code so the several units of one code sit next to each other.
+    A code has more than one unit when its numeric rows carry more than one non-blank unit in all
+    files of the run together (the data is longitudinal). Sorted by code so the several units of
+    one code sit next to each other.
     """
-    queue = pl.concat([st["unit_queue"] for st in all_stats])
+    pairs = pl.concat([st["unit_pairs"] for st in all_stats])
     used = pl.concat([st["conversions_used"] for st in all_stats])
     all_names = (pl.col("test_names").str.split(" | ").list.explode().drop_nulls().unique().sort()
                  .str.join(" | ").alias("test_names"))
-    queue_all = (queue.group_by("code", "unit")
-                 .agg(all_names, pl.col("n_rows").sum(), pl.col("file").n_unique().alias("n_files"),
-                      pl.col("file").sort().str.join("; ").alias("files"))
-                 .sort(["code", "n_rows"], descending=[False, True])) if queue.height else queue.drop("file")
+    per_unit = (pairs.group_by("code", "unit")
+                .agg(all_names, pl.col("n_rows").sum(), pl.col("file").n_unique().alias("n_files"),
+                     pl.col("file").sort().str.join("; ").alias("files"),
+                     pl.col("conversion_status").first()))
+    # a blank unit is a missing unit, not a second unit
+    multi = (per_unit.filter(pl.col("unit").is_not_null()).group_by("code")
+             .agg(pl.col("unit").n_unique().alias("n_units")).filter(pl.col("n_units") > 1))
+    # the unit a registered conversion converts *to* is the code's chosen unit, not an open question
+    targets = conversions.select("code", pl.col("unit_target").alias("unit")).unique()
+    queue_all = (per_unit.with_columns(pl.col("unit").fill_null("<blank>"))
+                 .join(multi.select("code"), on="code")
+                 .filter(pl.col("conversion_status") == "not_registered")
+                 .join(targets, on=["code", "unit"], how="anti")
+                 .select("code", "unit", "test_names", "n_rows", "n_files", "files")
+                 .sort(["code", "n_rows"], descending=[False, True]))
     used_all = (used.group_by("code", "unit_source", "unit_target")
                 .agg(all_names, pl.col("n_rows").sum(), pl.col("file").n_unique().alias("n_files"),
                      pl.col("file").sort().str.join("; ").alias("files"))
@@ -823,12 +881,20 @@ def run() -> None:
 
     files = select_files(settings)
     log.info("%d file(s) to process from %s", len(files), files[0].parent)
+    cols = settings["columns"]
+    linked = linked_values(files, cols)
+    if link_column(cols):
+        log.info("linked exclusion: %s distinct %s values on rows with code prefix %s, over all "
+                 "selected files; rows that share one are excluded too",
+                 f"{linked.len():,}", link_column(cols), ",".join(cols["exclude_code_prefixes"]))
+    else:
+        log.info("linked exclusion: off (settings.toml [columns] link / exclude_linked)")
 
     all_stats = []
     for path in files:
         try:
             all_stats.append(process_file(path, settings, patterns, folders, criteria["near_miss"],
-                                          synonyms, conversions))
+                                          synonyms, conversions, linked))
         except Exception:  # noqa: BLE001 - keep going, the log records the failure
             log.exception("FAILED %s", path.name)
 
@@ -836,16 +902,17 @@ def run() -> None:
         table = comparison_table(all_stats)
         table.write_csv(folders["root"] / "distribution_comparison.csv")
         log_comparison(table)
-        queue_all, used_all = unit_reports_across_files(all_stats)
+        queue_all, used_all = unit_reports_across_files(all_stats, conversions)
         queue_all.write_csv(folders["root"] / "units_not_registered.csv")
         used_all.write_csv(folders["root"] / "conversions_applied.csv")
         codes = code_dictionary_across_files(all_stats)
         codes.write_csv(folders["root"] / "code_dictionary.csv")
         log.info("CODES: %s codes seen across the run -> code_dictionary.csv (names and units per code)",
                  f"{codes.height:,}")
-        log.info("UNITS: %s (code, unit) pairs unregistered across the run -> units_not_registered.csv; "
+        log.info("UNITS: %s (code, unit) pairs on %s multi-unit codes unregistered across the run "
+                 "(multi-unit decided over all files) -> units_not_registered.csv; "
                  "%s conversions applied -> conversions_applied.csv",
-                 f"{queue_all.height:,}", f"{used_all.height:,}")
+                 f"{queue_all.height:,}", f"{queue_all['code'].n_unique():,}", f"{used_all.height:,}")
     log.info("outputs in %s", folders["root"])
 
 

@@ -42,10 +42,21 @@ hundred thousand distinct values. A file takes seconds.
 | `[paths]` (edit on your device) | `lab_dir`, `output_dir` | Author's paths |
 | `[input]` | `files` (empty list = all files that match `file_glob`) | One small file |
 | `[output]` | `write_harmonized_files`, compression | Off |
-| `[columns]` | `code`, `result`, `unit`, `name`, `exclude_code_prefixes` | `MB` excluded |
+| `[columns]` | `code`, `result`, `unit`, `name`, `exclude_code_prefixes`, `link`, `exclude_linked` | `MB` excluded, also through `OBS_ID` |
 
-Excluded rows (microbiology) stay in the harmonized file at their position. They get
-`shape = microbiology` and null in the other 13 new columns. The log counts them.
+Microbiology is out of scope. The runner excludes a row for one of two reasons:
+
+| Reason | Setting | Example |
+|---|---|---|
+| The code starts with an excluded prefix | `exclude_code_prefixes = ["MB"]` | `MB` culture codes |
+| The row shares its `link` value with a row of the first kind | `link = "OBS_ID"`, `exclude_linked = true` | `No growth` with an empty `CODE_TEST` in an `MB` order |
+
+Before the first file, the runner reads two columns (`link` and `code`) from all selected files.
+It collects the `link` values of the prefix rows. An empty `link` or `exclude_linked = false`
+turns the second reason off.
+
+Excluded rows stay in the harmonized file at their position. They get `shape = microbiology` and
+null in the other 13 new columns. The log counts them per file, by prefix and by link.
 
 ---
 
@@ -57,10 +68,11 @@ never overwrites an earlier run.
 ```
 run_<YYYYMMDD_HHMMSS>/
 ├── lab_harmonize.log            file digests, compiled patterns, counts per file, timings
-├── distribution_comparison.csv  one row per file: split / missing / review shares, shape shares,
+├── distribution_comparison.csv  one row per file: excluded_rows, excluded_linked_rows,
+│                                split / missing / review shares, shape shares,
 │                                parse_failures, row_count_match
 ├── code_dictionary.csv          every code with its names and units (§4.5)
-├── units_not_registered.csv     (code, unit) pairs still to decide (§4.5)
+├── units_not_registered.csv     (code, unit) pairs still to decide, over all files (§4.5)
 ├── conversions_applied.csv      conversions that ran, rows, files (§4.5)
 ├── harmonized/<input name>      source rows + 14 columns, same name, order and codec as source
 ├── decisions/<stem>_decisions.csv   every distinct value + 14 decision columns (audit trail)
@@ -85,7 +97,7 @@ cover processed rows only. The harmonized file has all source rows.
 | 1 | `qualifier` | Modifier or grade: `Weakly`, `Trace`, `Few`, `Adequate`, `Over` |
 | 2 | `number_std`, `range_low_std`, `range_high_std` | Converted if registered, else a copy |
 | 2 | `unit_std` | Target unit if converted, else `unit` |
-| 2 | `conversion_status` | `convert`, `not_registered`, or null (no number) |
+| 2 | `conversion_status` | `convert`, `not_registered`, or null (not a numeric shape) |
 
 `number` + `unit` are what the lab reported. `number_std` + `unit_std` are what a project uses.
 
@@ -352,21 +364,31 @@ code has one direction only.
 |---|---|---|
 | `number_std`, `range_low_std`, `range_high_std` | Converted value | Copy of the split value |
 | `unit_std` | `unit_target` | `unit` |
-| `conversion_status` | `convert` | `not_registered` (null if no number) |
+| `conversion_status` | `convert` | `not_registered` |
+
+The numeric shapes are `plain_numeric`, `operator_numeric`, `numeric_range` and
+`verbal_operator_numeric`, with `split_action = split`. Every other row gets a null
+`conversion_status`. This is also true when the row has a `number`, for example `0.01 Negative`
+or `3+`. The `_std` columns of such a row are a copy of the split values.
 
 `not_registered` is not a warning. It is correct for every single-unit test. The runner does not
 round converted numbers: 1.5 ng/mL becomes 0.0000015 g/L.
 
 ### 4.5 The three unit reports
 
-Each report covers all input files of the run, sorted by `code`. `files` and `n_files` say where a
-row occurs.
+Each report covers all input files of the run, sorted by `code`. `files` and `n_files` say in
+which files the code (and unit) occurs. `n_rows` counts rows in all files of the run.
 
 | Report | Use | Row |
 |---|---|---|
 | `code_dictionary.csv` | Find a code ("the code for HDL", "codes in `KUA/L`"); spot a code with two tests (`402053`) | One per code: `test_names`, `units_recorded`, `units_used`, `n_rows` |
-| `units_not_registered.csv` | Work queue before a project uses a test. About 85 rows over 16 years | One per unregistered pair on a multi-unit code, except the code's target unit |
+| `units_not_registered.csv` | Work queue before a project uses a test. 95 rows in 47 codes (prod run, 2026-10-30) | One per unregistered pair on a multi-unit code, except the code's target unit |
 | `conversions_applied.csv` | Confirm a conversion ran. It does not judge the factor | One per applied pair: rows touched, files |
+
+`Decision` (2026-10-30): the runner decides "multi-unit code" over the whole run, not per file.
+The data is longitudinal. A code that changes unit at a year boundary has one unit in each file.
+Over the whole run it has two, so it appears in `units_not_registered.csv`. A blank unit does not
+count as a second unit.
 
 ### 4.6 Registry origin
 
@@ -391,6 +413,7 @@ Pairs with no fixed constant are not in the file (copies vs IU/mL, `KUA/L` vs `P
 ## 5. Check a run
 
 1. `lab_harmonize.log`: no `FAILED`. Each file has `row count check: source N = harmonized N`.
+   Each file has a `rows:` line with the excluded rows by prefix and by link.
 2. `distribution_comparison.csv`: `row_count_match` is `true` and `parse_failures` is 0 for every
    file. A parse failure is a `split` row with nothing extracted.
 3. `review/<stem>_review_top.csv`: each frequent value is a rule to add (§3.7) or a known exclusion

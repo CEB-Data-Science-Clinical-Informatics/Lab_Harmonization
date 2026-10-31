@@ -52,3 +52,10 @@ name = "SHORT_TEST"
 # place, with `shape` set to the label below and every other new column null.
 exclude_code_prefixes = ["MB"]
 excluded_shape_label = "microbiology"
+# Order column that links the rows of one order. A row whose link value also occurs on a row with
+# an excluded code prefix is excluded too, in the same way (for example a culture result with an
+# empty CODE_TEST that shares its OBS_ID with MB rows). Before the first file, the runner reads
+# this column and the code column from all selected files to collect the link values.
+# Empty link or exclude_linked = false: the rule is off.
+link = "OBS_ID"
+exclude_linked = true
